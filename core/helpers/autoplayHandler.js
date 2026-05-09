@@ -23,9 +23,10 @@ class AutoplayHandler {
         this.autoplayLocks.delete(guildId);
     }
 
-    
     isPlayerValid(player) {
-        if (!player || player.destroyed) return false;
+        if (!player) return false;
+        // PlayerState.DESTROYED = 5, PlayerState.DESTROYING = 4
+        if (player.state === 4 || player.state === 5) return false;
         const exists = this.kazagumo.players.has(player.guildId);
         const autoplayEnabled = this.getAutoplayStatus(player.guildId);
         return exists && autoplayEnabled;
@@ -280,8 +281,8 @@ class AutoplayHandler {
                 return;
             }
 
-            
-            const currentTrack = player.queue.current;
+            // Use previous[0] as fallback when current is null (e.g. called from playerEmpty after queue.current was nulled)
+            const currentTrack = player.queue.current || player.queue.previous?.[0] || null;
             if (currentTrack && !currentTrack.isAutoPlayed) {
                 this.recordManualTrack(guildId, currentTrack);
             }
@@ -439,7 +440,7 @@ class AutoplayHandler {
                     return;
                 }
 
-                if (!player.playing && !player.paused && !player.destroyed) {
+                if (!player.playing && !player.paused && player.state !== 4 && player.state !== 5) {
                     await player.play();
                 }
 
