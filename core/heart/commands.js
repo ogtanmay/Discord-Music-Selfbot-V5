@@ -152,7 +152,7 @@ class GhostyCommands {
 
         try {
             
-            if (inputInfo.type === 'url' && inputInfo.linkInfo?.type.includes('youtube')) {
+            if (inputInfo.type === 'url' && inputInfo.linkInfo?.type?.includes('youtube')) {
                 const videoId = linkHandler.extractVideoId(query);
                 if (videoId) {
                     
@@ -191,6 +191,10 @@ class GhostyCommands {
             return message.channel.send('Error while searching for the track.');
         }
         
+        if (!searchResult) {
+            return message.channel.send('Error while searching for the track.');
+        }
+
         const { tracks, type, playlistName } = searchResult;
 
         if (type === 'NO_MATCHES' || !tracks.length) {
@@ -220,7 +224,8 @@ class GhostyCommands {
         
             await new Promise(resolve => setTimeout(resolve, 500));
         
-            message.channel.send(`🎵 **Queued:** \`${track.title}\` - Now at position \`${player.queue.length}\``);
+            const queuePosition = player.queue.current === track ? 1 : player.queue.length + 1;
+            message.channel.send(`🎵 **Queued:** \`${track.title}\` - Now at position \`${queuePosition}\``);
         }
 
     

@@ -91,7 +91,7 @@ class AutoplayHandler {
         (this.autoplayHistory.get(guildId) || []).forEach(id => playedHistory.add(id));
         
         player.queue.previous?.forEach(t => t?.identifier && playedHistory.add(t.identifier));
-        player.queue.tracks?.forEach(t => t?.identifier && playedHistory.add(t.identifier));
+        player.queue?.forEach(t => t?.identifier && playedHistory.add(t.identifier));
 
         const seedIds = this.getSeedIds(guildId);
         if (!seedIds.length) return;
@@ -310,13 +310,11 @@ class AutoplayHandler {
                 });
             }
 
-            if (player.queue.tracks) {
-                player.queue.tracks.forEach(track => {
-                    if (track.identifier) playedTracks.add(track.identifier);
-                    if (track.uri) playedTracks.add(track.uri);
-                    if (track.title) playedTracks.add(track.title.toLowerCase());
-                });
-            }
+            player.queue.forEach(track => {
+                if (track.identifier) playedTracks.add(track.identifier);
+                if (track.uri) playedTracks.add(track.uri);
+                if (track.title) playedTracks.add(track.title.toLowerCase());
+            });
 
             history.forEach(id => playedTracks.add(id));
 
