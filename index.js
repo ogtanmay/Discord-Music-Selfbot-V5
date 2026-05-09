@@ -1,6 +1,6 @@
 const { Client } = require('discord.js-selfbot-v13');
 const { Kazagumo } = require('kazagumo');
-const { Shoukaku, Connectors } = require('shoukaku');
+const { Connectors } = require('shoukaku');
 const AutoplayHandler = require('./core/helpers/autoplayHandler');                                                                                                                                                 // made by ghosty
 const GhostyCommands = require('./core/heart/commands');
 
@@ -58,20 +58,20 @@ kazagumo.on('playerStart', (player, track) => {
     client.channels.cache.get(player.textId)?.send(`🔊 **Now Playing:** \`${track.title}\` by \`${track.author}\``);
 });
 
-kazagumo.on('playerEnd', async (player) => {
-    
-    if (player.queue.length === 0 && autoplayHandler.getAutoplayStatus(player.guildId)) {
+kazagumo.on('playerEnd', (player) => {
+    // Track monitoring for individual tracks is handled by the playerStart event.
+});
+
+kazagumo.on('playerEmpty', async (player) => {
+    if (autoplayHandler.getAutoplayStatus(player.guildId)) {
         try {
-            const lastTrack = player.queue.previous[0] || player.queue.current;
-            if (lastTrack) {
-                await autoplayHandler.enableAutoplay(player);
-            }
+            await autoplayHandler.enableAutoplay(player);
         } catch (err) {
-            console.error('[PLAYEREND AUTOPLAY ERROR]', err);
+            console.error('[PLAYEREMPTY AUTOPLAY ERROR]', err);
         }
-    } else if (player.queue.length === 0) {
-        player.destroy();
-        client.channels.cache.get(player.textId)?.send('⏹️ Queue finished. Disconnecting from voice channel.');                                                                                                                                                // made by ghosty
+    } else {
+        await player.destroy();
+        client.channels.cache.get(player.textId)?.send('⏹️ Queue finished. Disconnecting from voice channel.');
     }
 });
 

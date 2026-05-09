@@ -27,6 +27,7 @@ class GhostyCommands {
     }
 
     ghostyCreateProgressBar(current, total, length = 20) {
+        if (!total || total <= 0) return `[${'░'.repeat(length)}]`;
         const percentage = current / total;
         const filled = Math.round(percentage * length);
         const empty = length - filled;
@@ -105,7 +106,7 @@ class GhostyCommands {
 **Settings & Filters** [♬↻♬]
 \`${this.prefix}volume <0-1000>\` - Adjust volume
 \`${this.prefix}autoplay\` - Toggle GhoSty AI recommendations
-\`${this.prefix}Clearfilters\` - Clear audio filters
+\`${this.prefix}clearfilters\` - Clear audio filters
 \`${this.prefix}lofi\`, \`bassboost\`, \`dolby\`, \`heaven\`, \`instrumental\`, \`vibe\` - Audio filters
 `;
         return message.channel.send(helpMessage);
@@ -152,7 +153,7 @@ class GhostyCommands {
 
         try {
             
-            if (inputInfo.type === 'url' && inputInfo.linkInfo?.type.includes('youtube')) {
+            if (inputInfo.type === 'url' && inputInfo.linkInfo?.type?.includes('youtube')) {
                 const videoId = linkHandler.extractVideoId(query);
                 if (videoId) {
                     
@@ -191,6 +192,10 @@ class GhostyCommands {
             return message.channel.send('Error while searching for the track.');
         }
         
+        if (!searchResult) {
+            return message.channel.send('Error while searching for the track.');
+        }
+
         const { tracks, type, playlistName } = searchResult;
 
         if (type === 'NO_MATCHES' || !tracks.length) {
@@ -220,18 +225,13 @@ class GhostyCommands {
         
             await new Promise(resolve => setTimeout(resolve, 500));
         
-            message.channel.send(`🎵 **Queued:** \`${track.title}\` - Now at position \`${player.queue.length}\``);
+            const queuePosition = player.queue.current === track ? 1 : player.queue.length + 1;
+            message.channel.send(`🎵 **Queued:** \`${track.title}\` - Now at position \`${queuePosition}\``);
         }
 
     
         if (!player.playing && !player.paused) {
             await player.play();
-        
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const currentTrack = player.queue.current;
-            if (currentTrack) {
-                this.autoplayHandler.startTrackMonitor(player, currentTrack);
-            }
         }
     }
 
@@ -249,12 +249,6 @@ class GhostyCommands {
         player.skip();
         
         message.channel.send(`|► **Skipped:** \`${currentTrack.title}\` by \`${currentTrack.author}\``);
-        
-        
-        const nextTrack = player.queue.current;
-        if (nextTrack) {
-            this.autoplayHandler.startTrackMonitor(player, nextTrack);
-        }
     }
 
     async ghostyStopCommand(message) {
@@ -263,7 +257,7 @@ class GhostyCommands {
             console.log(`[STOP] Cleaning up and destroying player for guild ${message.guild.id}`);
             
             this.autoplayHandler.cleanupGuildState(message.guild.id);
-            player.destroy();
+            await player.destroy();
             message.channel.send('⏹️ **Stop & Disconnect:** Cleared the queue and left the voice channel.');
         } else {
             message.channel.send('No active music player in this guild.');
@@ -284,7 +278,7 @@ class GhostyCommands {
         
         let queueMessage = `⥂ **Queue (${queue.length} tracks)**\n\n`;
         queueMessage += `**Currently Playing:**\n`;
-        queueMessage += `1. \`${currentTrack.title}\` by \`${currentTrack.author}\` [\`${this.ghostyFormatTime(currentTrack.length)}\`]${isAutoPlayed}\n\n`;
+        queueMessage += `1. \`${currentTrack.title}\` by \`${currentTrack.author}\` [\`${this.ghostyFormatTime(currentTrack.length || 0)}\`]${isAutoPlayed}\n\n`;
 
         if (queue.length === 0) {
             queueMessage += `**Upcoming:** No tracks in queue.`;
@@ -293,7 +287,7 @@ class GhostyCommands {
             for (let i = 0; i < Math.min(10, queue.length); i++) {
                 const track = queue[i];
                 const trackAutoStatus = track.isAutoPlayed ? ' [↻]' : '';
-                queueMessage += `${i + 2}. \`${track.title}\` by \`${track.author}\` [\`${this.ghostyFormatTime(track.length)}\`]${trackAutoStatus}\n`;
+                queueMessage += `${i + 2}. \`${track.title}\` by \`${track.author}\` [\`${this.ghostyFormatTime(track.length || 0)}\`]${trackAutoStatus}\n`;
             }
             
             if (queue.length > 10) {
@@ -312,7 +306,7 @@ class GhostyCommands {
 
         const track = player.queue.current;
         const current = player.position;
-        const total = track.length;
+        const total = track.length || 0;
         
         const progressBar = this.ghostyCreateProgressBar(current, total);
         const currentTime = this.ghostyFormatTime(current);
